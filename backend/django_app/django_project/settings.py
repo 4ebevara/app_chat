@@ -78,10 +78,10 @@ WSGI_APPLICATION = 'django_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'chat_db'),
-        'USER': os.getenv('DB_USER', 'chat_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'chat_password'),
-        'HOST': os.getenv('DB_HOST', 'db'),
+        'NAME': 'app_chat',
+        'USER': 'asyl',
+        'PASSWORD': '20061960',
+        'HOST': 'db',
         'PORT': '5432',
     }
 }
