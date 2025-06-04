@@ -1,52 +1,59 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Request
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
+from fastapi.middleware.wsgi import WSGIMiddleware
+from django.core.wsgi import get_wsgi_application
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy import text
+import os
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_app.settings')
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+
+django_app = get_wsgi_application()
+app.mount("/django", WSGIMiddleware(django_app))
+
+
+@app.get("/", response_class=HTMLResponse)
+async def get_chat_page(request: Request):
+    return templates.TemplateResponse("chat.html", {"request": request})
+
+
+@app.get("/api")
+async def api_root(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(text("SELECT 1"))
+    return {"message": "Hello from FastAPI with DB!"}
+
 
 class ConnectionManager:
     def __init__(self):
-        self.connections: List[WebSocket] = []
+        self.active_connections: List[WebSocket] = []
 
-    async def connect(self, ws: WebSocket):
-        await ws.accept()
-        self.connections.append(ws)
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
 
-    def disconnect(self, ws: WebSocket):
-        self.connections.remove(ws)
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str):
-        for conn in self.connections:
-            await conn.send_text(message)
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
 
 manager = ConnectionManager()
 
-@app.websocket("/ws/{chat_id}")
-async def websocket_endpoint(ws: WebSocket, chat_id: int):
-    await manager.connect(ws)
-    try:
-        while True:
-            data = await ws.receive_text()
-            await manager.broadcast(f"Chat {chat_id}: {data}")
-    except WebSocketDisconnect:
-        manager.disconnect(ws)
 
-
-@app.websocket("/ws/{room_name}")
-async def websocket_endpoint(websocket: WebSocket, room_name: str):
-    await websocket.accept()
+@app.websocket("/ws/chat/{chat_id}")
+async def websocket_chat(websocket: WebSocket, chat_id: int):
+    await manager.connect(websocket)
     try:
         while True:
             data = await websocket.receive_text()
-            await websocket.send_text(f"Message from {room_name}: {data}")
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        await websocket.close()
-
-@app.get("/")
-async def root(db: AsyncSession = Depends(get_db)):
-    # Можно сделать запрос к БД тут, например:
-    result = await db.execute("SELECT 1")
-    return {"message": "Hello from FastAPI with DB!"}
+            await manager.broadcast(f"Chat {chat_id}: {data}")
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)

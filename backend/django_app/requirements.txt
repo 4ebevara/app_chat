@@ -3,5 +3,5 @@ djangorestframework
 psycopg2-binary
 channels
 redis
-psycopg2-binary
+
 
