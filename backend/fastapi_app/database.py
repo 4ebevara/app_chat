@@ -6,7 +6,9 @@ DATABASE_URL = "postgresql+asyncpg://chat_user:chat_password@db:5432/chat_db"
 engine = create_async_engine(DATABASE_URL, echo=True)
 
 async_session = sessionmaker(
-    bind=engine, class_=AsyncSession, expire_on_commit=False
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False
 )
 
 async def get_db():
