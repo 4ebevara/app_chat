@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:13
+    image: postgres:14
     environment:
       POSTGRES_DB: app_chat
       POSTGRES_USER: asyl
@@ -12,8 +12,8 @@ services:
 
   django_app:
     build:
-      context: .
-      dockerfile: Dockerfile.django
+      context: ./backend/django_app
+      dockerfile: Dockerfile
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend/django_app:/app
@@ -24,9 +24,9 @@ services:
 
   fastapi_app:
     build:
-      context: .
-      dockerfile: Dockerfile.fastapi
-    command: uvicorn fastapi_app.main:app --host 0.0.0.0 --port 8001
+      context: ./backend/fastapi_app
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8001
     volumes:
       - ./backend/fastapi_app:/app
     ports:

@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 import os
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_app.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_project.settings')
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
